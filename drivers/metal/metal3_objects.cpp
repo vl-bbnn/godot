@@ -55,6 +55,8 @@
 #include "drivers/metal/rendering_device_driver_metal3.h"
 #include "drivers/metal/rendering_shader_container_metal.h"
 
+#include "drivers/metal/private_command_buffer_timing.h"
+
 #include <algorithm>
 
 using namespace MTL3;
@@ -122,6 +124,7 @@ void MDCommandBuffer::commit() {
 			_frame_state.rs->commit();
 		}
 	}
+	PrivateMetalTiming::before_commit(commandBuffer.get());
 	commandBuffer->commit();
 	commandBuffer.reset();
 	state_begin = false;
