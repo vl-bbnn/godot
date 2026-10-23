@@ -28,6 +28,7 @@ struct State {
 	FILE *file = nullptr;
 	mach_timebase_info_data_t timebase = {};
 	std::atomic<uint64_t> submitted{ 0 };
+	std::atomic<uint64_t> skipped_null_calls{ 0 };
 	std::array<Row, ROW_LIMIT> rows;
 
 	~State() {
@@ -49,9 +50,10 @@ struct State {
 					(unsigned long long)r.completed_tick, r.gpu_start_seconds, r.gpu_end_seconds,
 					r.status, (long long)r.error_code, unsigned(r.completed), unsigned(valid)) < 0;
 		}
-		failed |= fprintf(file, "# submitted=%llu recorded=%llu truncated=%llu\n",
+		failed |= fprintf(file, "# submitted=%llu recorded=%llu truncated=%llu skipped_null_calls=%llu\n",
 				(unsigned long long)count, (unsigned long long)recorded,
-				(unsigned long long)(count - recorded)) < 0;
+				(unsigned long long)(count - recorded),
+				(unsigned long long)skipped_null_calls.load(std::memory_order_relaxed)) < 0;
 		failed |= ferror(file) != 0;
 		failed |= fclose(file) != 0;
 		if (failed) {
@@ -90,6 +92,10 @@ inline std::shared_ptr<State> create_state() {
 inline void before_commit(MTL::CommandBuffer *buffer) {
 	static const std::shared_ptr<State> state = create_state();
 	if (!state) {
+		return;
+	}
+	if (!buffer) {
+		state->skipped_null_calls.fetch_add(1, std::memory_order_relaxed);
 		return;
 	}
 	const uint64_t index = state->submitted.fetch_add(1, std::memory_order_relaxed);
