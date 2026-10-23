@@ -1,3 +1,4 @@
+#include "core/os/openbfme_private_frame_span.h"
 /**************************************************************************/
 /*  main.cpp                                                              */
 /**************************************************************************/
@@ -4919,6 +4920,7 @@ static uint64_t navigation_process_max = 0;
 // will terminate the program. In case of failure, the OS exit code needs
 // to be set explicitly here (defaults to EXIT_SUCCESS).
 bool Main::iteration() {
+	OpenBFMEFrameSpan private_iteration_span("iteration");
 	GodotProfileZone("Main::iteration");
 	GodotProfileZoneGroupedFirst(_profile_zone, "prepare");
 	iterating++;
@@ -5101,15 +5103,15 @@ bool Main::iteration() {
 	uint64_t frame_time = OS::get_singleton()->get_ticks_usec() - ticks;
 
 	GodotProfileZoneGrouped(_profile_zone, "GDExtensionManager::frame");
-	GDExtensionManager::get_singleton()->frame();
+	{ OpenBFMEFrameSpan span("extension_frame"); GDExtensionManager::get_singleton()->frame(); }
 
 	GodotProfileZoneGrouped(_profile_zone, "ScriptServer::frame");
 	for (int i = 0; i < ScriptServer::get_language_count(); i++) {
-		ScriptServer::get_language(i)->frame();
+		{ OpenBFMEFrameSpan span("script_frame"); ScriptServer::get_language(i)->frame(); }
 	}
 
 	GodotProfileZoneGrouped(_profile_zone, "AudioServer::update");
-	AudioServer::get_singleton()->update();
+	{ OpenBFMEFrameSpan span("audio_update"); AudioServer::get_singleton()->update(); }
 
 	if (EngineDebugger::is_active()) {
 		EngineDebugger::get_singleton()->iteration(frame_time, process_ticks, physics_process_ticks, physics_step);
@@ -5175,7 +5177,7 @@ bool Main::iteration() {
 	bool wake_for_events = scene_tree && scene_tree->is_accessibility_enabled();
 
 	GodotProfileZoneGrouped(_profile_zone, "OS::add_frame_delay");
-	OS::get_singleton()->add_frame_delay(DisplayServer::get_singleton()->window_can_draw(), wake_for_events);
+	{ OpenBFMEFrameSpan span("os_add_frame_delay"); OS::get_singleton()->add_frame_delay(DisplayServer::get_singleton()->window_can_draw(), wake_for_events); }
 
 #ifdef TOOLS_ENABLED
 	if (auto_build_solutions) {

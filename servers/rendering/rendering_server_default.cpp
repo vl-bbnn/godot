@@ -1,3 +1,4 @@
+#include "core/os/openbfme_private_frame_span.h"
 /**************************************************************************/
 /*  rendering_server_default.cpp                                          */
 /**************************************************************************/
@@ -74,6 +75,7 @@ void RenderingServerDefault::request_frame_drawn_callback(const Callable &p_call
 }
 
 void RenderingServerDefault::_draw(bool p_swap_buffers, double frame_step) {
+	OpenBFMEFrameSpan private_draw_span("renderer_draw");
 	GodotProfileZoneGroupedFirst(_profile_zone, "rasterizer->begin_frame");
 	RSG::rasterizer->begin_frame(frame_step);
 
@@ -209,7 +211,7 @@ void RenderingServerDefault::_draw(bool p_swap_buffers, double frame_step) {
 	}
 
 	GodotProfileZoneGrouped(_profile_zone, "memory_info");
-	RSG::utilities->update_memory_info();
+	{ OpenBFMEFrameSpan span("memory_info"); RSG::utilities->update_memory_info(); }
 }
 
 void RenderingServerDefault::_run_post_draw_steps() {

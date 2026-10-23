@@ -1,3 +1,4 @@
+#include "core/os/openbfme_private_frame_span.h"
 /**************************************************************************/
 /*  display_server_macos.mm                                               */
 /**************************************************************************/
@@ -3182,6 +3183,7 @@ void DisplayServerMacOS::process_events() {
 }
 
 void DisplayServerMacOS::_process_events(bool p_pump) {
+	OpenBFMEFrameSpan private_events_span("macos_process_events");
 	ERR_FAIL_COND(!Thread::is_main_thread());
 
 	if (p_pump) {

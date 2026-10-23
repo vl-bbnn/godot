@@ -1,3 +1,4 @@
+#include "core/os/openbfme_private_frame_span.h"
 /**************************************************************************/
 /*  os_macos.mm                                                           */
 /**************************************************************************/
@@ -61,9 +62,11 @@
 #include <sys/sysctl.h>
 
 void OS_MacOS::add_frame_delay(bool p_can_draw, bool p_wake_for_events) {
+	OpenBFMEFrameSpan private_delay_span("macos_frame_delay");
 	bool wake_for_events = p_wake_for_events;
 	if (!wake_for_events) {
-		NSArray<NSRunningApplication *> *proc_array = [NSRunningApplication runningApplicationsWithBundleIdentifier:@"com.crowdcafe.windowmagnet"];
+		NSArray<NSRunningApplication *> *proc_array;
+		{ OpenBFMEFrameSpan span("running_app_query"); proc_array = [NSRunningApplication runningApplicationsWithBundleIdentifier:@"com.crowdcafe.windowmagnet"]; }
 		if (proc_array && proc_array.count > 0) {
 			wake_for_events = true;
 		}
@@ -86,7 +89,7 @@ void OS_MacOS::add_frame_delay(bool p_can_draw, bool p_wake_for_events) {
 		CFRunLoopAddTimer(CFRunLoopGetCurrent(), wait_timer, kCFRunLoopCommonModes);
 		return;
 	}
-	OS_Unix::add_frame_delay(p_can_draw, wake_for_events);
+	{ OpenBFMEFrameSpan span("unix_frame_delay"); OS_Unix::add_frame_delay(p_can_draw, wake_for_events); }
 }
 
 void OS_MacOS::initialize() {
