@@ -57,6 +57,9 @@
 
 #include <initializer_list>
 #include <optional>
+#include <memory>
+
+namespace PrivateMetalStageOwner { class Batch; }
 
 namespace MTL3 {
 
@@ -311,6 +314,9 @@ private:
 	MTL::CommandQueue *queue = nullptr;
 	NS::SharedPtr<MTL::CommandBuffer> commandBuffer;
 	bool state_begin = false;
+	bool private_stage_decided = false;
+	std::shared_ptr<PrivateMetalStageOwner::Batch> private_stage_batch;
+	MTL::RenderCommandEncoder *_private_stage_encoder(MTL::RenderPassDescriptor *p_desc);
 
 	MTL::CommandBuffer *command_buffer();
 
