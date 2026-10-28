@@ -56,6 +56,7 @@
 #include "drivers/metal/rendering_shader_container_metal.h"
 
 #include "drivers/metal/private_command_buffer_timing.h"
+#include "drivers/metal/private_stage_policy.h"
 
 #include <algorithm>
 
@@ -88,6 +89,8 @@ void MDCommandBuffer::end_label() {
 }
 
 void MDCommandBuffer::begin() {
+	private_stage_batch.reset();
+	private_stage_decided = false;
 	DEV_ASSERT(commandBuffer.get() == nullptr && !state_begin);
 	state_begin = true;
 	bzero(pending_after_stages, sizeof(pending_after_stages));
@@ -124,10 +127,53 @@ void MDCommandBuffer::commit() {
 			_frame_state.rs->commit();
 		}
 	}
+	if (private_stage_batch) {
+		private_stage_batch->before_commit(commandBuffer.get());
+	}
 	PrivateMetalTiming::before_commit(commandBuffer.get());
 	commandBuffer->commit();
 	commandBuffer.reset();
+	private_stage_batch.reset();
+	private_stage_decided = false;
 	state_begin = false;
+}
+
+
+// Private opt-in stage samples. Encoder/CB ordinals are not viewport frame IDs.
+static const std::shared_ptr<PrivateMetalStagePolicy::Trace> &private_stage_trace(MTL::CommandQueue *queue) {
+	static const auto trace = [queue]() -> std::shared_ptr<PrivateMetalStagePolicy::Trace> {
+		const char *path = std::getenv("OPENBFME_METAL_STAGE_TIMING");
+		if (!path || !*path) return {};
+		PrivateMetalStagePolicy::Status status;
+		auto result = PrivateMetalStagePolicy::Trace::create(path, std::getenv("OPENBFME_METAL_STAGE_STRIDE"), queue ? queue->device() : nullptr, status);
+		if (!result) std::fprintf(stderr, "PRIVATE METAL STAGE: unavailable status=%u\n", unsigned(status));
+		return result;
+	}();
+	return trace;
+}
+
+MTL::RenderCommandEncoder *MDCommandBuffer::_private_stage_encoder(MTL::RenderPassDescriptor *p_desc) {
+	const auto &trace = private_stage_trace(queue);
+	if (!trace) return command_buffer()->renderCommandEncoder(p_desc);
+	if (!trace->accepts_device(queue->device())) {
+		trace->skip_other_device();
+		return command_buffer()->renderCommandEncoder(p_desc);
+	}
+	if (!private_stage_decided) {
+		PrivateMetalStagePolicy::Status status;
+		private_stage_batch = trace->batch(status);
+		private_stage_decided = true;
+		if (!private_stage_batch && status == PrivateMetalStagePolicy::Status::BatchFailure) std::fprintf(stderr, "PRIVATE METAL STAGE: batch unavailable\n");
+	}
+	auto *buffer = command_buffer();
+	if (!private_stage_batch) return buffer->renderCommandEncoder(p_desc);
+	PrivateMetalStageOwner::Status status;
+	auto *encoder = private_stage_batch->new_encoder(buffer, p_desc, status);
+	if (status == PrivateMetalStageOwner::Status::AllocationFailed) {
+		const auto &m = PrivateMetalStageOwner::metrics;
+		std::fprintf(stderr, "PRIVATE METAL STAGE OWNERS: allocated=%u released=%u batches_created=%u batches_destroyed=%u callbacks=%u completed=%u\n", m.sample_allocations.load(), m.sample_owner_releases.load(), m.created.load(), m.destroyed.load(), m.callbacks.load(), m.completed.load());
+	}
+	return encoder;
 }
 
 MTL::CommandBuffer *MDCommandBuffer::command_buffer() {
@@ -239,7 +285,7 @@ void MDCommandBuffer::bind_pipeline(RDD::PipelineID p_pipeline) {
 			// and is due to the SUPPORTS_FRAGMENT_SHADER_WITH_ONLY_SIDE_EFFECTS flag.
 			render.desc->setDefaultRasterSampleCount(static_cast<NS::UInteger>(rp->sample_count));
 
-			render.encoder = NS::RetainPtr(command_buffer()->renderCommandEncoder(render.desc.get()));
+			render.encoder = NS::RetainPtr(_private_stage_encoder(render.desc.get()));
 			_encode_barrier(render.encoder.get());
 		}
 
@@ -713,7 +759,7 @@ MTL::RenderCommandEncoder *MDCommandBuffer::get_new_render_encoder_with_descript
 			break;
 	}
 
-	MTL::RenderCommandEncoder *enc = command_buffer()->renderCommandEncoder(p_desc);
+	MTL::RenderCommandEncoder *enc = _private_stage_encoder(p_desc);
 	_encode_barrier(enc);
 	return enc;
 }
@@ -837,6 +883,7 @@ void MDCommandBuffer::render_clear_attachments(VectorView<RDD::AttachmentClear> 
 	enc->setFragmentBytes(clear_colors, sizeof(clear_colors), 0);
 	enc->setVertexBytes(vertices, vertex_count * sizeof(vertices[0]), device_driver->get_metal_buffer_index_for_vertex_attribute_binding(VERT_CONTENT_BUFFER_INDEX));
 
+	if (private_stage_batch) private_stage_batch->note_draw(enc, -1, vertex_count, 1);
 	enc->drawPrimitives(MTL::PrimitiveTypeTriangle, (NS::UInteger)0, vertex_count);
 	enc->popDebugGroup();
 
@@ -1173,7 +1220,7 @@ void MDCommandBuffer::render_next_subpass() {
 		// the defaultRasterSampleCount from the pipeline's sample count.
 		render.desc = desc;
 	} else {
-		render.encoder = NS::RetainPtr(command_buffer()->renderCommandEncoder(desc.get()));
+		render.encoder = NS::RetainPtr(_private_stage_encoder(desc.get()));
 		_encode_barrier(render.encoder.get());
 
 		if (!render.is_rendering_entire_area) {
@@ -1201,6 +1248,7 @@ void MDCommandBuffer::render_draw(uint32_t p_vertex_count,
 	DEV_ASSERT(render.dirty == 0);
 
 	MTL::RenderCommandEncoder *enc = render.encoder.get();
+	if (private_stage_batch) private_stage_batch->note_draw(enc, render.pipeline->shader->frag ? 1 : 0, p_vertex_count, p_instance_count);
 	enc->drawPrimitives(render.pipeline->raster_state.render_primitive, p_base_vertex, p_vertex_count, p_instance_count, p_first_instance);
 }
 
@@ -1279,6 +1327,7 @@ void MDCommandBuffer::render_draw_indexed(uint32_t p_index_count,
 	uint32_t index_offset = render.index_offset;
 	index_offset += p_first_index * (render.index_type == MTL::IndexTypeUInt16 ? sizeof(uint16_t) : sizeof(uint32_t));
 
+	if (private_stage_batch) private_stage_batch->note_draw(enc, render.pipeline->shader->frag ? 1 : 0, p_index_count, p_instance_count);
 	enc->drawIndexedPrimitives(render.pipeline->raster_state.render_primitive, p_index_count, render.index_type, render.index_buffer, index_offset, p_instance_count, p_vertex_offset, p_first_instance);
 }
 
@@ -1294,6 +1343,7 @@ void MDCommandBuffer::render_draw_indexed_indirect(RDD::BufferID p_indirect_buff
 	NS::UInteger indirect_offset = p_offset;
 
 	for (uint32_t i = 0; i < p_draw_count; i++) {
+		if (private_stage_batch) private_stage_batch->note_draw(enc, render.pipeline->shader->frag ? 1 : 0, 0, 0, true);
 		enc->drawIndexedPrimitives(render.pipeline->raster_state.render_primitive, render.index_type, render.index_buffer, 0, indirect_buffer->metal_buffer.get(), indirect_offset);
 		indirect_offset += p_stride;
 	}
@@ -1315,6 +1365,7 @@ void MDCommandBuffer::render_draw_indirect(RDD::BufferID p_indirect_buffer, uint
 	NS::UInteger indirect_offset = p_offset;
 
 	for (uint32_t i = 0; i < p_draw_count; i++) {
+		if (private_stage_batch) private_stage_batch->note_draw(enc, render.pipeline->shader->frag ? 1 : 0, 0, 0, true);
 		enc->drawPrimitives(render.pipeline->raster_state.render_primitive, indirect_buffer->metal_buffer.get(), indirect_offset);
 		indirect_offset += p_stride;
 	}
