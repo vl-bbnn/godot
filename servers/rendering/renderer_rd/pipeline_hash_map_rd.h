@@ -32,6 +32,7 @@
 
 #include "core/object/worker_thread_pool.h"
 #include "core/os/mutex.h"
+#include "core/os/os.h"
 #include "core/templates/hash_map.h"
 #include "core/templates/local_vector.h"
 #include "core/templates/rb_map.h"
@@ -42,6 +43,17 @@
 #include "servers/rendering/rendering_server_enums.h"
 
 #define PRINT_PIPELINE_COMPILATION_KEYS 0
+
+// Private diagnostic: observe task ownership without changing compilation policy.
+inline bool pipeline_dependency_trace_enabled() {
+	static const bool enabled = OS::get_singleton()->get_environment("GODOT_PIPELINE_TRACE") == "1";
+	return enabled;
+}
+
+inline bool pipeline_dependency_trace_hits_enabled() {
+	static const bool enabled = OS::get_singleton()->get_environment("GODOT_PIPELINE_TRACE_HITS") == "1";
+	return enabled;
+}
 
 template <typename Key, typename CreationClass, typename CreationFunction>
 class PipelineHashMapRD {
@@ -150,6 +162,9 @@ public:
 		// Queue a background compilation task.
 		WorkerThreadPool::TaskID task_id = WorkerThreadPool::get_singleton()->add_template_task(creation_object, creation_function, p_key, p_high_priority, "PipelineCompilation");
 		compilation_tasks.insert(p_key_hash, task_id);
+		if (pipeline_dependency_trace_enabled()) {
+			print_line("PIPELINE_TRACE submit us=", OS::get_singleton()->get_ticks_usec(), " owner=", uint64_t(uintptr_t(creation_object)), " hash=", p_key_hash, " task=", task_id, " source=", int(p_source), " high_priority=", p_high_priority);
+		}
 	}
 
 	void wait_for_pipeline(uint32_t p_key_hash) {
@@ -171,7 +186,16 @@ public:
 		}
 
 		if (task_id_to_wait != WorkerThreadPool::INVALID_TASK_ID) {
+			const bool trace = pipeline_dependency_trace_enabled();
+			const uint64_t start = trace ? OS::get_singleton()->get_ticks_usec() : 0;
+			if (trace) {
+				print_line("PIPELINE_TRACE wait_begin us=", start, " owner=", uint64_t(uintptr_t(creation_object)), " hash=", p_key_hash, " task=", task_id_to_wait, " caller_task=", WorkerThreadPool::get_singleton()->get_caller_task_id());
+			}
 			WorkerThreadPool::get_singleton()->wait_for_task_completion(task_id_to_wait);
+			if (trace) {
+				const uint64_t end = OS::get_singleton()->get_ticks_usec();
+				print_line("PIPELINE_TRACE wait_end us=", end, " owner=", uint64_t(uintptr_t(creation_object)), " hash=", p_key_hash, " task=", task_id_to_wait, " duration_us=", end - start);
+			}
 		}
 	}
 
@@ -206,6 +230,12 @@ public:
 				return RID();
 			}
 		} else {
+			// Private identity proof. Both flags are startup-only; the fixture
+			// filters a frozen actual-draw interval from these cache-hit records.
+			// No second pipeline request or compilation is introduced.
+			if (pipeline_dependency_trace_enabled() && pipeline_dependency_trace_hits_enabled()) {
+				print_line("PIPELINE_TRACE cache_hit us=", OS::get_singleton()->get_ticks_usec(), " owner=", uint64_t(uintptr_t(creation_object)), " hash=", p_key_hash, " pipeline=", e->value().get_id(), " source=", int(p_source), " wait=", p_wait_for_compilation);
+			}
 			return e->value();
 		}
 	}
