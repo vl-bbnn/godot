@@ -31,6 +31,7 @@
 #include "render_forward_clustered.h"
 
 #include "core/config/project_settings.h"
+#include "core/os/os.h"
 #include "servers/rendering/renderer_rd/environment/fog.h"
 #include "servers/rendering/renderer_rd/framebuffer_cache_rd.h"
 #include "servers/rendering/renderer_rd/storage_rd/light_storage.h"
@@ -303,6 +304,9 @@ void RenderForwardClustered::update() {
 
 template <RenderForwardClustered::PassMode p_pass_mode, uint32_t p_color_pass_flags>
 void RenderForwardClustered::_render_list_template(RenderingDevice::DrawListID p_draw_list, RenderingDevice::FramebufferFormatID p_framebuffer_Format, RenderListParameters *p_params, uint32_t p_from_element, uint32_t p_to_element) {
+	// Private attribution only: unset leaves normal pipeline selection unchanged.
+	const String terrain_pipeline_mode = OS::get_singleton()->get_environment("OPENBFME_TERRAIN_PIPELINE_MODE");
+	ERR_FAIL_COND_MSG(!terrain_pipeline_mode.is_empty() && terrain_pipeline_mode != "observe" && terrain_pipeline_mode != "uber" && terrain_pipeline_mode != "specialized", "Unknown private terrain pipeline diagnostic mode");
 	RendererRD::MeshStorage *mesh_storage = RendererRD::MeshStorage::get_singleton();
 	RendererRD::ParticlesStorage *particles_storage = RendererRD::ParticlesStorage::get_singleton();
 	RD::DrawListID draw_list = p_draw_list;
@@ -485,7 +489,8 @@ void RenderForwardClustered::_render_list_template(RenderingDevice::DrawListID p
 
 		pipeline_key.framebuffer_format_id = framebuffer_format;
 		pipeline_key.wireframe = p_params->force_wireframe;
-		pipeline_key.ubershader = 0;
+		const bool terrain_pipeline_probe = !terrain_pipeline_mode.is_empty() && shader->code.contains("terrain_vertex(");
+		pipeline_key.ubershader = terrain_pipeline_probe && terrain_pipeline_mode == "uber" ? 1 : 0;
 
 		bool emulate_point_size = shader->uses_point_size && scene_shader.emulate_point_size;
 
@@ -493,7 +498,7 @@ void RenderForwardClustered::_render_list_template(RenderingDevice::DrawListID p
 		RID vertex_array_rd;
 		RID index_array_rd;
 		RID pipeline_rd;
-		const uint32_t ubershader_iterations = 2;
+		const uint32_t ubershader_iterations = (terrain_pipeline_probe && terrain_pipeline_mode == "specialized") ? 1 : 2;
 		bool pipeline_valid = false;
 		while (pipeline_key.ubershader < ubershader_iterations) {
 			// Skeleton and blend shape.
@@ -520,8 +525,14 @@ void RenderForwardClustered::_render_list_template(RenderingDevice::DrawListID p
 
 			if (shader != prev_shader || pipeline_hash != prev_pipeline_hash) {
 				RSE::PipelineSource pipeline_source = pipeline_key.ubershader ? RSE::PIPELINE_SOURCE_DRAW : RSE::PIPELINE_SOURCE_SPECIALIZATION;
-				pipeline_rd = shader->pipeline_hash_map.get_pipeline(pipeline_key, pipeline_hash, pipeline_key.ubershader, pipeline_source);
+				pipeline_rd = shader->pipeline_hash_map.get_pipeline(pipeline_key, pipeline_hash, pipeline_key.ubershader || (terrain_pipeline_probe && terrain_pipeline_mode == "specialized"), pipeline_source);
 
+				if (terrain_pipeline_probe) {
+					ERR_FAIL_COND_MSG(!pipeline_rd.is_valid() && terrain_pipeline_mode != "observe", "Requested terrain diagnostic pipeline unavailable; refusing a mode fallback");
+					if (pipeline_rd.is_valid()) {
+						print_line(vformat("TERRAIN_PIPELINE_BOUND mode=%s shader_sha256=%s uber=%d key=%d pipeline=%d version=%d", terrain_pipeline_mode, shader->code.sha256_text(), int(pipeline_key.ubershader), int64_t(pipeline_hash), int64_t(pipeline_rd.get_id()), int(pipeline_key.version)));
+					}
+				}
 				if (pipeline_rd.is_valid()) {
 					pipeline_valid = true;
 					prev_shader = shader;
