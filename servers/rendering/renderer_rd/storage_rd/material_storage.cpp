@@ -2278,6 +2278,9 @@ void MaterialStorage::shader_set_code(RID p_shader, const String &p_code) {
 		shader->data->set_path_hint(shader->path_hint);
 		shader->data->set_code(p_code);
 	}
+	if (pipeline_dependency_trace_enabled()) {
+		print_line("PIPELINE_TRACE shader_rid us=", OS::get_singleton()->get_ticks_usec(), " shader=", p_shader.get_id(), " owner=", uint64_t(uintptr_t(shader->data)), " type=", int(shader->type), " code_hash=", p_code.sha256_text());
+	}
 
 	for (Material *E : shader->owners) {
 		Material *material = E;
@@ -2500,6 +2503,9 @@ void MaterialStorage::material_set_shader(RID p_material, RID p_shader) {
 	if (p_shader.is_null()) {
 		material->dependency.changed_notify(Dependency::DEPENDENCY_CHANGED_MATERIAL);
 		material->shader_id = 0;
+		if (pipeline_dependency_trace_enabled()) {
+			print_line("PIPELINE_TRACE material_rid us=", OS::get_singleton()->get_ticks_usec(), " material=", p_material.get_id(), " shader=", uint64_t(0), " owner=", uint64_t(0));
+		}
 		return;
 	}
 
@@ -2512,6 +2518,9 @@ void MaterialStorage::material_set_shader(RID p_material, RID p_shader) {
 	material->shader_type = shader->type;
 	material->shader_id = p_shader.get_local_index();
 	shader->owners.insert(material);
+	if (pipeline_dependency_trace_enabled()) {
+		print_line("PIPELINE_TRACE material_rid us=", OS::get_singleton()->get_ticks_usec(), " material=", p_material.get_id(), " shader=", p_shader.get_id(), " owner=", uint64_t(uintptr_t(shader->data)));
+	}
 
 	if (shader->type == SHADER_TYPE_MAX) {
 		return;
