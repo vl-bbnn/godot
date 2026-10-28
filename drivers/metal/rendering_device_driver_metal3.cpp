@@ -36,7 +36,76 @@
 #include "drivers/metal/pixel_formats.h"
 #include "drivers/metal/rendering_context_driver_metal.h"
 
+#include <array>
+#include <atomic>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <dlfcn.h>
+#include <execinfo.h>
+#include <mutex>
+
 namespace MTL3 {
+
+namespace {
+// Diagnostic only: same after-wait error/sample design as the qualified old
+// fence-error-only-20261021 observer. This bounded association avoids changing
+// the device header/layout. An opt-in CPU mutex may perturb scheduling; no
+// diagnostic timings qualify performance or disprove the historical timeout.
+bool fence_trace_enabled() {
+	static const bool enabled = []() {
+		const char *value = std::getenv("GODOT_METAL_FENCE_TRACE");
+		return value && std::strcmp(value, "1") == 0;
+	}();
+	return enabled;
+}
+bool fence_trace_sample() {
+	static const bool enabled = []() {
+		const char *value = std::getenv("GODOT_METAL_FENCE_TRACE_SAMPLE");
+		return value && std::strcmp(value, "1") == 0;
+	}();
+	static std::atomic<bool> emitted{ false };
+	return enabled && !emitted.load(std::memory_order_relaxed) && !emitted.exchange(true);
+}
+// BEGIN bounded encoded-identity association (standalone contract checked).
+struct FenceTraceKey {
+	uintptr_t fence = 0;
+	uintptr_t event = 0;
+	uint64_t value = 0;
+	bool operator==(const FenceTraceKey &p_other) const {
+		return fence == p_other.fence && event == p_other.event && value == p_other.value;
+	}
+};
+struct FenceTraceRecord {
+	FenceTraceKey key;
+	uintptr_t command_buffer = 0; // Encoded identity only; never retained or dereferenced.
+};
+class FenceTraceRecords {
+	std::array<FenceTraceRecord, 128> records{};
+	size_t count = 0;
+	size_t next = 0;
+	std::mutex mutex;
+public:
+	void put(FenceTraceKey p_key, uintptr_t p_cb) {
+		std::lock_guard<std::mutex> lock(mutex);
+		records[next] = { p_key, p_cb };
+		next = (next + 1) % records.size();
+		if (count < records.size()) { count++; }
+	}
+	uintptr_t find(FenceTraceKey p_key) {
+		std::lock_guard<std::mutex> lock(mutex);
+		for (size_t i = 0; i < count; i++) {
+			const auto &record = records[(next + records.size() - 1 - i) % records.size()];
+			if (record.key == p_key) { return record.command_buffer; }
+		}
+		return 0; // Evicted/not recorded: report unknown, never infer a command buffer.
+	}
+};
+// END bounded encoded-identity association.
+
+FenceTraceRecords fence_trace_records;
+} // namespace
+
 
 #pragma mark - FenceEvent / FenceSemaphore
 
@@ -44,11 +113,34 @@ void RenderingDeviceDriverMetal::FenceEvent::signal(MTL::CommandBuffer *p_cb) {
 	if (p_cb) {
 		value++;
 		p_cb->encodeSignalEvent(event.get(), value);
+		if (fence_trace_enabled()) {
+			fence_trace_records.put({ reinterpret_cast<uintptr_t>(this), reinterpret_cast<uintptr_t>(event.get()), value }, reinterpret_cast<uintptr_t>(p_cb));
+		}
 	}
 }
 
 Error RenderingDeviceDriverMetal::FenceEvent::wait(uint32_t p_timeout_ms) {
-	bool signaled = event->waitUntilSignaledValue(value, p_timeout_ms);
+	// Capture the same by-value argument; do not inspect event/clock before wait.
+	const uint64_t requested = value;
+	bool signaled = event->waitUntilSignaledValue(requested, p_timeout_ms);
+	if (fence_trace_enabled()) {
+		const uintptr_t cb = fence_trace_records.find({ reinterpret_cast<uintptr_t>(this), reinterpret_cast<uintptr_t>(event.get()), requested });
+		if (!signaled || (cb && fence_trace_sample())) {
+			const uint64_t after = event->signaledValue();
+			Dl_info image{};
+			dladdr(__builtin_return_address(0), &image);
+			static std::mutex output_mutex;
+			std::lock_guard<std::mutex> lock(output_mutex);
+			std::fprintf(stderr, "FENCE TRACE kind=%s mode=error_only_bounded fence=%p event=%p requested=%llu counter_now=%llu before_known=0 before=0 after=%llu deadline_ms=%u wait_us_known=0 wait_us=0 cb=%p cb_identity_known=%d cb_retained=0 cb_status=-1 cb_error_known=0 cb_error=0 image_base=%p caller=%p\n",
+					signaled ? "sample_success" : "timeout", static_cast<void *>(this), static_cast<void *>(event.get()),
+					static_cast<unsigned long long>(requested), static_cast<unsigned long long>(value), static_cast<unsigned long long>(after),
+					p_timeout_ms, reinterpret_cast<void *>(cb), cb != 0, image.dli_fbase, __builtin_return_address(0));
+			void *stack[32];
+			const int count = backtrace(stack, 32);
+			backtrace_symbols_fd(stack, count, 2);
+			std::fflush(stderr);
+		}
+	}
 	if (!signaled) {
 #ifdef DEBUG_ENABLED
 		ERR_PRINT("timeout waiting for fence");
