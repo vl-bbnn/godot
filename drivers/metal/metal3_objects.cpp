@@ -49,6 +49,8 @@
 /**************************************************************************/
 
 #include "metal3_objects.h"
+#include <cstdio>
+#include <cstdlib>
 
 #include "drivers/metal/metal_utils.h"
 #include "drivers/metal/pixel_formats.h"
@@ -1668,6 +1670,34 @@ void MDCommandBuffer::_bind_uniforms_direct(MDUniformSet *p_set, MDShader *p_sha
 			frame_idx = (p_dynamic_offsets >> shift) & 0xf;
 		} else {
 			frame_idx = 0;
+		}
+
+		// Only sampler-only uniforms not used by any compiled MSL stage may be
+		// omitted. Dynamic offset indexing above still consumes its normal entry.
+		// Do not clamp slots or suppress an error for an actually used sampler.
+		if (uniform.type == RDD::UNIFORM_TYPE_SAMPLER && ui.active_stages.is_empty()) {
+			const char *slot_trace = std::getenv("GODOT_METAL_SLOT_TRACE");
+			static uint32_t skipped_reports = 0;
+			if (indexes.sampler >= 16 && slot_trace && slot_trace[0] == '1' && slot_trace[1] == 0 && skipped_reports++ < 32) {
+				std::fprintf(stderr, "METAL INACTIVE SAMPLER shader=\"%s\" set=%u binding=%u slot=%u active_stages=0 skipped\n", p_shader->name.get_data(), p_set_index, ui.binding, indexes.sampler);
+				std::fflush(stderr);
+			}
+			continue;
+		}
+
+		// Private diagnostics only: retain the failing API call and its validation.
+		// Identify a slot overflow without retaining resources or changing bindings.
+		const bool sampler_only = uniform.type == RDD::UNIFORM_TYPE_SAMPLER;
+		const bool sampler_texture = uniform.type == RDD::UNIFORM_TYPE_SAMPLER_WITH_TEXTURE;
+		const uint32_t sampler_count = sampler_only ? uniform.ids.size() : (sampler_texture ? uniform.ids.size() / 2 : 0);
+		if (sampler_count && indexes.sampler != UINT32_MAX && (indexes.sampler >= 16 || sampler_count > 16 - indexes.sampler)) {
+			const char *slot_trace = std::getenv("GODOT_METAL_SLOT_TRACE");
+			static uint32_t reports = 0;
+			if (slot_trace && slot_trace[0] == '1' && slot_trace[1] == 0 && reports++ < 32) {
+				std::fprintf(stderr, "METAL SLOT OVERFLOW shader=\"%s\" set=%u uniform=%u binding=%u type=%u slot=%u count=%u reflected_array=%u\n",
+						p_shader->name.get_data(), p_set_index, i, ui.binding, uint32_t(uniform.type), indexes.sampler, sampler_count, ui.arrayLength);
+				std::fflush(stderr);
+			}
 		}
 
 		switch (uniform.type) {

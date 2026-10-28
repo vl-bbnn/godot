@@ -52,6 +52,9 @@ class API_AVAILABLE(macos(11.0), ios(14.0), tvos(14.0)) RenderingDeviceDriverMet
 	struct FenceEvent : Fence {
 		NS::SharedPtr<MTL::SharedEvent> event;
 		uint64_t value = 0;
+		// Private opt-in diagnostics only. Retaining the most recent buffer lets
+		// a timeout report its status safely; this perturbs resource lifetime.
+		uintptr_t trace_command_buffer_id = 0; // encoded identity only; never dereferenced after signal
 		FenceEvent(NS::SharedPtr<MTL::SharedEvent> p_event) :
 				event(p_event) {}
 		void signal(MTL::CommandBuffer *p_cb) override;
