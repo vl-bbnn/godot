@@ -991,6 +991,15 @@ bool RenderingDeviceDriverMetal::swap_chain_get_hdr_output_supported(SwapChainID
 void RenderingDeviceDriverMetal::swap_chain_set_max_fps(SwapChainID p_swap_chain, int p_max_fps) {
 	SwapChain *swap_chain = (SwapChain *)(p_swap_chain.id);
 	RenderingContextDriverMetal::Surface *metal_surface = (RenderingContextDriverMetal::Surface *)(swap_chain->surface);
+	// Private opt-in experiment: keep OS::add_frame_delay's software cap, but
+	// remove Metal's minimum presentation duration. On a fixed 75 Hz display,
+	// a 1/30 s minimum holds each drawable for at least three refreshes (25 fps).
+	// Compare both modes in this same binary before considering a default change.
+	if (OS::get_singleton()->get_environment("GODOT_METAL_SOFTWARE_FRAME_CAP") == "1") {
+		metal_surface->set_max_fps(0);
+		print_line(vformat("METAL FRAME CAP experiment: software-only, requested %d fps", p_max_fps));
+		return;
+	}
 	metal_surface->set_max_fps(p_max_fps);
 }
 
