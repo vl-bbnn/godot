@@ -853,6 +853,9 @@ void MDCommandBuffer::_render_set_dirty_state() {
 		if (push_constant_binding != UINT32_MAX) {
 			render.encoder->setVertexBytes(push_constant_data, push_constant_data_len, push_constant_binding);
 			render.encoder->setFragmentBytes(push_constant_data, push_constant_data_len, push_constant_binding);
+			// A later shader can use this slot for a normal uniform buffer. Do not
+			// suppress its rebind based on the buffer that preceded setBytes.
+			binding_cache.invalidate_buffer(push_constant_binding);
 		}
 	}
 
@@ -860,6 +863,7 @@ void MDCommandBuffer::_render_set_dirty_state() {
 	if (subpass.view_count > 1) {
 		uint32_t view_range[2] = { 0, subpass.view_count };
 		render.encoder->setVertexBytes(view_range, sizeof(view_range), VIEW_MASK_BUFFER_INDEX);
+		binding_cache.invalidate_buffer(VIEW_MASK_BUFFER_INDEX);
 		render.encoder->setFragmentBytes(view_range, sizeof(view_range), VIEW_MASK_BUFFER_INDEX);
 	}
 
@@ -1387,6 +1391,7 @@ void MDCommandBuffer::_compute_set_dirty_state() {
 	if (compute.dirty.has_flag(ComputeState::DIRTY_PUSH)) {
 		if (push_constant_binding != UINT32_MAX) {
 			compute.encoder->setBytes(push_constant_data, push_constant_data_len, push_constant_binding);
+			binding_cache.invalidate_buffer(push_constant_binding);
 		}
 	}
 
@@ -1668,6 +1673,12 @@ void MDCommandBuffer::_bind_uniforms_direct(MDUniformSet *p_set, MDShader *p_sha
 			frame_idx = (p_dynamic_offsets >> shift) & 0xf;
 		} else {
 			frame_idx = 0;
+		}
+
+		// Omit only sampler-only uniforms unused by every compiled MSL stage.
+		// Dynamic offset indexing above must still consume its normal entry.
+		if (uniform.type == RDD::UNIFORM_TYPE_SAMPLER && ui.active_stages.is_empty()) {
+			continue;
 		}
 
 		switch (uniform.type) {

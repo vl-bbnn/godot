@@ -457,7 +457,7 @@ bool RenderingShaderContainerMetal::_set_code_from_spirv(const ReflectShader &p_
 			for (const ReflectUniform &uniform : dset) {
 				const SpvReflectDescriptorBinding &binding = uniform.get_spv_reflect();
 
-				found->active_stages = uniform.stages;
+				found->active_stages = msl_options.argument_buffers ? static_cast<uint32_t>(uniform.stages) : 0u;
 
 				RDC::UniformType type = RDC::UniformType(uniform.type);
 				uint32_t binding_stride = 1; // If this is an array, stride will be the length of the array.
@@ -686,6 +686,20 @@ bool RenderingShaderContainerMetal::_set_code_from_spirv(const ReflectShader &p_
 			source = compiler.compile();
 		} catch (CompilerError &e) {
 			ERR_FAIL_V_MSG(false, "Failed to compile stage " + String(RDC::SHADER_STAGE_NAMES[stage]) + ": " + e.what());
+		}
+
+		// Direct Metal bindings must omit samplers removed by the MSL compiler.
+		// SPIR-V's declared set includes the shared defaults even when unused;
+		// binding those defaults can exceed Metal's 16 sampler slots. Preserve
+		// the slot map and mark only actual MSL use, unioned across stages.
+		// SPIRV-Cross documents this query as valid after compile().
+		if (!msl_options.argument_buffers) {
+			for (uint32_t binding_index = 0; binding_index < spirv_bindings.size(); binding_index++) {
+				const MSLResourceBinding &resource_binding = spirv_bindings[binding_index].first;
+				if (compiler.is_msl_resource_binding_used(execution_model, resource_binding.desc_set, resource_binding.binding)) {
+					mtl_reflection_binding_set_uniforms_data.ptrw()[binding_index].active_stages |= 1u << stage;
+				}
+			}
 		}
 
 		ERR_FAIL_COND_V_MSG(compiler.get_entry_points_and_stages().size() != 1, false, "Expected a single entry point and stage.");

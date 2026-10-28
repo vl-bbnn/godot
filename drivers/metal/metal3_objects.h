@@ -141,9 +141,10 @@ struct BindingCache {
 	struct BufferBinding {
 		MTL::Buffer *buffer = nullptr;
 		NS::UInteger offset = 0;
+		bool valid = false;
 
 		bool operator!=(const BufferBinding &p_other) const {
-			return buffer != p_other.buffer || offset != p_other.offset;
+			return valid != p_other.valid || buffer != p_other.buffer || offset != p_other.offset;
 		}
 	};
 
@@ -155,6 +156,14 @@ struct BindingCache {
 		textures.clear();
 		samplers.clear();
 		buffers.clear();
+	}
+
+	// setBytes installs an API-owned buffer, not the buffer this cache remembers.
+	// Unknown must remain distinct from a known null buffer binding.
+	_FORCE_INLINE_ void invalidate_buffer(uint32_t p_index) {
+		if (p_index < buffers.size()) {
+			buffers[p_index].valid = false;
+		}
 	}
 
 private:
@@ -215,6 +224,7 @@ public:
 			BufferBinding new_binding = {
 				.buffer = p_values[i],
 				.offset = p_offsets[i],
+				.valid = true,
 			};
 			if (binding != new_binding) {
 				binding = new_binding;
@@ -232,6 +242,7 @@ public:
 		BufferBinding new_binding = {
 			.buffer = p_buffer,
 			.offset = p_offset,
+			.valid = true,
 		};
 		if (binding != new_binding) {
 			binding = new_binding;
