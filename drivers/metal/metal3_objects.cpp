@@ -56,6 +56,7 @@
 #include "drivers/metal/rendering_shader_container_metal.h"
 
 #include "drivers/metal/private_command_buffer_timing.h"
+#include "drivers/metal/private_stage_policy.h"
 
 #include <algorithm>
 
@@ -88,6 +89,8 @@ void MDCommandBuffer::end_label() {
 }
 
 void MDCommandBuffer::begin() {
+	private_stage_batch.reset();
+	private_stage_decided = false;
 	DEV_ASSERT(commandBuffer.get() == nullptr && !state_begin);
 	state_begin = true;
 	bzero(pending_after_stages, sizeof(pending_after_stages));
@@ -124,10 +127,48 @@ void MDCommandBuffer::commit() {
 			_frame_state.rs->commit();
 		}
 	}
+	if (private_stage_batch) {
+		private_stage_batch->before_commit(commandBuffer.get());
+	}
 	PrivateMetalTiming::before_commit(commandBuffer.get());
 	commandBuffer->commit();
 	commandBuffer.reset();
+	private_stage_batch.reset();
+	private_stage_decided = false;
 	state_begin = false;
+}
+
+
+// Private opt-in stage samples. Encoder/CB ordinals are not viewport frame IDs.
+static const std::shared_ptr<PrivateMetalStagePolicy::Trace> &private_stage_trace(MTL::CommandQueue *queue) {
+	static const auto trace = [queue]() -> std::shared_ptr<PrivateMetalStagePolicy::Trace> {
+		const char *path = std::getenv("OPENBFME_METAL_STAGE_TIMING");
+		if (!path || !*path) return {};
+		PrivateMetalStagePolicy::Status status;
+		auto result = PrivateMetalStagePolicy::Trace::create(path, std::getenv("OPENBFME_METAL_STAGE_STRIDE"), queue ? queue->device() : nullptr, status);
+		if (!result) std::fprintf(stderr, "PRIVATE METAL STAGE: unavailable status=%u\n", unsigned(status));
+		return result;
+	}();
+	return trace;
+}
+
+MTL::RenderCommandEncoder *MDCommandBuffer::_private_stage_encoder(MTL::RenderPassDescriptor *p_desc) {
+	const auto &trace = private_stage_trace(queue);
+	if (!trace) return command_buffer()->renderCommandEncoder(p_desc);
+	if (!trace->accepts_device(queue->device())) {
+		trace->skip_other_device();
+		return command_buffer()->renderCommandEncoder(p_desc);
+	}
+	if (!private_stage_decided) {
+		PrivateMetalStagePolicy::Status status;
+		private_stage_batch = trace->batch(status);
+		private_stage_decided = true;
+		if (!private_stage_batch && status == PrivateMetalStagePolicy::Status::BatchFailure) std::fprintf(stderr, "PRIVATE METAL STAGE: batch unavailable\n");
+	}
+	auto *buffer = command_buffer();
+	if (!private_stage_batch) return buffer->renderCommandEncoder(p_desc);
+	PrivateMetalStageOwner::Status status;
+	return private_stage_batch->new_encoder(buffer, p_desc, status);
 }
 
 MTL::CommandBuffer *MDCommandBuffer::command_buffer() {
@@ -239,7 +280,7 @@ void MDCommandBuffer::bind_pipeline(RDD::PipelineID p_pipeline) {
 			// and is due to the SUPPORTS_FRAGMENT_SHADER_WITH_ONLY_SIDE_EFFECTS flag.
 			render.desc->setDefaultRasterSampleCount(static_cast<NS::UInteger>(rp->sample_count));
 
-			render.encoder = NS::RetainPtr(command_buffer()->renderCommandEncoder(render.desc.get()));
+			render.encoder = NS::RetainPtr(_private_stage_encoder(render.desc.get()));
 			_encode_barrier(render.encoder.get());
 		}
 
@@ -713,7 +754,7 @@ MTL::RenderCommandEncoder *MDCommandBuffer::get_new_render_encoder_with_descript
 			break;
 	}
 
-	MTL::RenderCommandEncoder *enc = command_buffer()->renderCommandEncoder(p_desc);
+	MTL::RenderCommandEncoder *enc = _private_stage_encoder(p_desc);
 	_encode_barrier(enc);
 	return enc;
 }
@@ -1173,7 +1214,7 @@ void MDCommandBuffer::render_next_subpass() {
 		// the defaultRasterSampleCount from the pipeline's sample count.
 		render.desc = desc;
 	} else {
-		render.encoder = NS::RetainPtr(command_buffer()->renderCommandEncoder(desc.get()));
+		render.encoder = NS::RetainPtr(_private_stage_encoder(desc.get()));
 		_encode_barrier(render.encoder.get());
 
 		if (!render.is_rendering_entire_area) {
