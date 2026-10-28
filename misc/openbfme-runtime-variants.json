@@ -1,0 +1,470 @@
+{
+  "upstream": "https://github.com/godotengine/godot",
+  "base": "ed1daf0bf001b61586d9930840f2f1394092c079",
+  "openbfme": "https://github.com/vl-bbnn/openbfme-godot/tree/codex/macos-base-debug",
+  "variants": [
+    {
+      "variant": "bib-graphics-terrain-source-20261027",
+      "branch": "codex/openbfme-bib-graphics-trace",
+      "base": "7eb933eb27002af5c811e460c14fc42d0d53d7e0",
+      "commit": "e4d0ddef5b352518506e2189fa1865a7b3fa38f8",
+      "files": {
+        "servers/rendering/renderer_rd/forward_clustered/render_forward_clustered.cpp": {
+          "sha256": "665e93d68357a2b4b3a521331573180fc688d20297eb15a8d07eaf886a94169c",
+          "bytes": 239980
+        },
+        "servers/rendering/renderer_rd/forward_clustered/scene_shader_forward_clustered.cpp": {
+          "sha256": "71d4f2cefde60979c05ce28c95557cc34c91e3f6288cb1d096d31093c8b05c14",
+          "bytes": 50097
+        },
+        "servers/rendering/renderer_rd/pipeline_hash_map_rd.h": {
+          "sha256": "eacb709a968c08d71c81a1f29eb2f0a9e9601ef847a759c75f079290944b1fcd",
+          "bytes": 10997
+        },
+        "servers/rendering/renderer_rd/storage_rd/material_storage.cpp": {
+          "sha256": "3a4f7be693cb5c60de9875b3600a2065f5e497570120e8c890717795182bbb15",
+          "bytes": 98439
+        }
+      },
+      "source_bytes_exact": true,
+      "status": "source snapshot; see scope in OPENBFME-RUNTIME.md"
+    },
+    {
+      "variant": "buffer-cache-source",
+      "branch": "codex/openbfme-metal-buffer-cache",
+      "base": "ed1daf0bf001b61586d9930840f2f1394092c079",
+      "commit": "1a0909ddb6924c751c3ae1febe4450b95c4977ff",
+      "files": {
+        "drivers/metal/metal3_objects.cpp": {
+          "sha256": "c925da603a923452a6e42ef686a548b0a81d9028e6b09edff3cf2a0d12ea20dc",
+          "bytes": 71672
+        },
+        "drivers/metal/metal3_objects.h": {
+          "sha256": "94e280cf82841da473648662537474e878435a81767cab8d425261a89fa9ae57",
+          "bytes": 22644
+        },
+        "drivers/metal/rendering_device_driver_metal.cpp": {
+          "sha256": "ff5a3d0dc4a42b7502ba74aa672c23722edfd26fcd6ac37b279210cc7c025f60",
+          "bytes": 120680
+        },
+        "drivers/metal/rendering_device_driver_metal3.cpp": {
+          "sha256": "3d18a85e8e05aac26cd48df479bc89a5a45fe9fcaa4e62a25264a744441fa4c2",
+          "bytes": 15575
+        },
+        "drivers/metal/rendering_device_driver_metal3.h": {
+          "sha256": "99fd35593634d1605175d907d3b2aabf67106099a8ed2d39ab4bc6dca426f42d",
+          "bytes": 5834
+        },
+        "drivers/metal/rendering_shader_container_metal.cpp": {
+          "sha256": "8da7c462b9668043672cc11b14ff0f1e4a64fa07979b63e7835bab3da0f93f81",
+          "bytes": 34068
+        },
+        "drivers/metal/rendering_shader_container_metal.h": {
+          "sha256": "07b8193c09e553a6de4fd7a32afdd91675da97d06c7a9d300cf57045497d5b73",
+          "bytes": 9287
+        }
+      },
+      "source_bytes_exact": true,
+      "status": "source snapshot; see scope in OPENBFME-RUNTIME.md"
+    },
+    {
+      "variant": "cache-identity-source",
+      "branch": "codex/openbfme-metal-sampler",
+      "base": "77f33c702024cababb343d69e3d51569c9948d79",
+      "commit": "77f33c702024cababb343d69e3d51569c9948d79",
+      "files": {},
+      "source_bytes_exact": true,
+      "status": "source snapshot; see scope in OPENBFME-RUNTIME.md"
+    },
+    {
+      "variant": "clean-metal-source",
+      "branch": "codex/openbfme-metal-binding",
+      "base": "ed1daf0bf001b61586d9930840f2f1394092c079",
+      "commit": "33d10a33f18721e81172e4b8fed46d089cfe39fa",
+      "files": {
+        "drivers/metal/metal3_objects.cpp": {
+          "sha256": "ff37f1b43b96352fbd599715e985c8defd3fa46d02a817064985bc7055562a92",
+          "bytes": 70183
+        },
+        "drivers/metal/metal3_objects.h": {
+          "sha256": "94e280cf82841da473648662537474e878435a81767cab8d425261a89fa9ae57",
+          "bytes": 22644
+        },
+        "drivers/metal/rendering_device_driver_metal.cpp": {
+          "sha256": "ff5a3d0dc4a42b7502ba74aa672c23722edfd26fcd6ac37b279210cc7c025f60",
+          "bytes": 120680
+        },
+        "drivers/metal/rendering_shader_container_metal.cpp": {
+          "sha256": "8da7c462b9668043672cc11b14ff0f1e4a64fa07979b63e7835bab3da0f93f81",
+          "bytes": 34068
+        },
+        "drivers/metal/rendering_shader_container_metal.h": {
+          "sha256": "07b8193c09e553a6de4fd7a32afdd91675da97d06c7a9d300cf57045497d5b73",
+          "bytes": 9287
+        }
+      },
+      "source_bytes_exact": true,
+      "status": "source snapshot; see scope in OPENBFME-RUNTIME.md"
+    },
+    {
+      "variant": "construction-trace-source",
+      "branch": "codex/openbfme-construction-trace",
+      "base": "ed1daf0bf001b61586d9930840f2f1394092c079",
+      "commit": "a76cbd096d1e1b7652e1ac90ea073eea02e0a352",
+      "files": {
+        "drivers/metal/metal3_objects.cpp": {
+          "sha256": "ff37f1b43b96352fbd599715e985c8defd3fa46d02a817064985bc7055562a92",
+          "bytes": 70183
+        },
+        "drivers/metal/metal3_objects.h": {
+          "sha256": "94e280cf82841da473648662537474e878435a81767cab8d425261a89fa9ae57",
+          "bytes": 22644
+        },
+        "drivers/metal/rendering_device_driver_metal.cpp": {
+          "sha256": "ff5a3d0dc4a42b7502ba74aa672c23722edfd26fcd6ac37b279210cc7c025f60",
+          "bytes": 120680
+        },
+        "drivers/metal/rendering_shader_container_metal.cpp": {
+          "sha256": "8da7c462b9668043672cc11b14ff0f1e4a64fa07979b63e7835bab3da0f93f81",
+          "bytes": 34068
+        },
+        "drivers/metal/rendering_shader_container_metal.h": {
+          "sha256": "07b8193c09e553a6de4fd7a32afdd91675da97d06c7a9d300cf57045497d5b73",
+          "bytes": 9287
+        },
+        "servers/rendering/renderer_rd/forward_clustered/scene_shader_forward_clustered.cpp": {
+          "sha256": "71d4f2cefde60979c05ce28c95557cc34c91e3f6288cb1d096d31093c8b05c14",
+          "bytes": 50097
+        },
+        "servers/rendering/renderer_rd/pipeline_hash_map_rd.h": {
+          "sha256": "eacb709a968c08d71c81a1f29eb2f0a9e9601ef847a759c75f079290944b1fcd",
+          "bytes": 10997
+        }
+      },
+      "source_bytes_exact": true,
+      "status": "source snapshot; see scope in OPENBFME-RUNTIME.md"
+    },
+    {
+      "variant": "current-fence-observer-source-20261027",
+      "branch": "codex/openbfme-fence-observer",
+      "base": "7eb933eb27002af5c811e460c14fc42d0d53d7e0",
+      "commit": "3b46d2ba536e825b7fb51507735fa74d87350846",
+      "files": {
+        "drivers/metal/rendering_device_driver_metal3.cpp": {
+          "sha256": "23e3004ebacf1d3f0f738c3b3c4197e1824b78fa88a96e34f3c6d1deef0e9bf8",
+          "bytes": 17230
+        }
+      },
+      "source_bytes_exact": true,
+      "status": "source snapshot; see scope in OPENBFME-RUNTIME.md"
+    },
+    {
+      "variant": "editor-doc-source",
+      "branch": "codex/openbfme-editor-doc",
+      "base": "ed1daf0bf001b61586d9930840f2f1394092c079",
+      "commit": "55b2079073b641c153e3341faa75b6df8645afd1",
+      "files": {
+        "editor/doc/editor_help.cpp": {
+          "sha256": "5750e19a83429083c44835e4ba57947562580aba6cba83e70a9110a9d8e5eb75",
+          "bytes": 181095
+        },
+        "editor/doc/editor_help.h": {
+          "sha256": "b967768f7618185ade3b5407795051ae4b8c559137a26ce8b1cb5138907f7dcf",
+          "bytes": 15191
+        },
+        "platform/macos/crash_handler_macos.mm": {
+          "sha256": "e320e6509067363a647d2b2911f4f3b185fbfda11a178a375e8dafa6c19f57a1",
+          "bytes": 8731
+        }
+      },
+      "source_bytes_exact": true,
+      "status": "source snapshot; see scope in OPENBFME-RUNTIME.md"
+    },
+    {
+      "variant": "fence-trace-source",
+      "branch": "codex/openbfme-fence-trace",
+      "base": "ed1daf0bf001b61586d9930840f2f1394092c079",
+      "commit": "53a64455838ee90dc78f97a9214a69b118968760",
+      "files": {
+        "drivers/metal/metal3_objects.cpp": {
+          "sha256": "04b7027931d455ed8d3a0592c57db3016888613b4902b99ff1316292e896a717",
+          "bytes": 71468
+        },
+        "drivers/metal/rendering_device_driver_metal.cpp": {
+          "sha256": "ff5a3d0dc4a42b7502ba74aa672c23722edfd26fcd6ac37b279210cc7c025f60",
+          "bytes": 120680
+        },
+        "drivers/metal/rendering_device_driver_metal3.cpp": {
+          "sha256": "3d18a85e8e05aac26cd48df479bc89a5a45fe9fcaa4e62a25264a744441fa4c2",
+          "bytes": 15575
+        },
+        "drivers/metal/rendering_device_driver_metal3.h": {
+          "sha256": "99fd35593634d1605175d907d3b2aabf67106099a8ed2d39ab4bc6dca426f42d",
+          "bytes": 5834
+        },
+        "drivers/metal/rendering_shader_container_metal.cpp": {
+          "sha256": "8da7c462b9668043672cc11b14ff0f1e4a64fa07979b63e7835bab3da0f93f81",
+          "bytes": 34068
+        },
+        "drivers/metal/rendering_shader_container_metal.h": {
+          "sha256": "07b8193c09e553a6de4fd7a32afdd91675da97d06c7a9d300cf57045497d5b73",
+          "bytes": 9287
+        }
+      },
+      "source_bytes_exact": true,
+      "status": "source snapshot; see scope in OPENBFME-RUNTIME.md"
+    },
+    {
+      "variant": "firstuse-pipeline-owner-source",
+      "branch": "codex/openbfme-pipeline-owner",
+      "base": "7eb933eb27002af5c811e460c14fc42d0d53d7e0",
+      "commit": "58e5535d4966c3515cdcd4b1f7ddd6fb107de6ce",
+      "files": {
+        "servers/rendering/renderer_rd/forward_clustered/scene_shader_forward_clustered.cpp": {
+          "sha256": "71d4f2cefde60979c05ce28c95557cc34c91e3f6288cb1d096d31093c8b05c14",
+          "bytes": 50097
+        },
+        "servers/rendering/renderer_rd/pipeline_hash_map_rd.h": {
+          "sha256": "eacb709a968c08d71c81a1f29eb2f0a9e9601ef847a759c75f079290944b1fcd",
+          "bytes": 10997
+        }
+      },
+      "source_bytes_exact": true,
+      "status": "source snapshot; see scope in OPENBFME-RUNTIME.md"
+    },
+    {
+      "variant": "firstuse-pipeline-owner-v3-source",
+      "branch": "codex/openbfme-pipeline-owner-v3",
+      "base": "7eb933eb27002af5c811e460c14fc42d0d53d7e0",
+      "commit": "d9c542672780d1795bd11e7de2add3902c40cd1e",
+      "files": {
+        "servers/rendering/renderer_rd/forward_clustered/scene_shader_forward_clustered.cpp": {
+          "sha256": "71d4f2cefde60979c05ce28c95557cc34c91e3f6288cb1d096d31093c8b05c14",
+          "bytes": 50097
+        },
+        "servers/rendering/renderer_rd/pipeline_hash_map_rd.h": {
+          "sha256": "eacb709a968c08d71c81a1f29eb2f0a9e9601ef847a759c75f079290944b1fcd",
+          "bytes": 10997
+        },
+        "servers/rendering/renderer_rd/storage_rd/material_storage.cpp": {
+          "sha256": "3a4f7be693cb5c60de9875b3600a2065f5e497570120e8c890717795182bbb15",
+          "bytes": 98439
+        }
+      },
+      "source_bytes_exact": true,
+      "status": "source snapshot; see scope in OPENBFME-RUNTIME.md"
+    },
+    {
+      "variant": "gpu-timing-source",
+      "branch": "codex/openbfme-gpu-timing",
+      "base": "9ab7f3079fa17562bb438dc879e9e84ab9e3164c",
+      "commit": "9ab7f3079fa17562bb438dc879e9e84ab9e3164c",
+      "files": {},
+      "source_bytes_exact": true,
+      "status": "source snapshot; see scope in OPENBFME-RUNTIME.md"
+    },
+    {
+      "variant": "residual-frame-source",
+      "branch": "codex/openbfme-frame-spans",
+      "base": "c5b2742504377a38d14e91a627bbdd85aad59fc1",
+      "commit": "c5b2742504377a38d14e91a627bbdd85aad59fc1",
+      "files": {},
+      "source_bytes_exact": true,
+      "status": "source snapshot; see scope in OPENBFME-RUNTIME.md"
+    },
+    {
+      "variant": "source",
+      "branch": "codex/openbfme-pipeline-trace",
+      "base": "ed1daf0bf001b61586d9930840f2f1394092c079",
+      "commit": "b58a5094f45af41c237992ad19befef6bf0a9f64",
+      "files": {
+        "drivers/metal/rendering_device_driver_metal.cpp": {
+          "sha256": "ff5a3d0dc4a42b7502ba74aa672c23722edfd26fcd6ac37b279210cc7c025f60",
+          "bytes": 120680
+        },
+        "servers/rendering/renderer_rd/forward_clustered/scene_shader_forward_clustered.cpp": {
+          "sha256": "71d4f2cefde60979c05ce28c95557cc34c91e3f6288cb1d096d31093c8b05c14",
+          "bytes": 50097
+        },
+        "servers/rendering/renderer_rd/pipeline_hash_map_rd.h": {
+          "sha256": "635c6b61e9a303923c3e3a161bafbce26cf0a48a53b0fb42fb37c939d5783d50",
+          "bytes": 10262
+        },
+        "servers/rendering/renderer_rd/renderer_canvas_render_rd.cpp": {
+          "sha256": "9d8304f5477fecd6e1552cc2533d02697e6ef012f71fbe79bc3d11688604eee7",
+          "bytes": 135516
+        }
+      },
+      "source_bytes_exact": true,
+      "status": "source snapshot; see scope in OPENBFME-RUNTIME.md"
+    },
+    {
+      "variant": "stage-timing-source-20261025",
+      "branch": "codex/openbfme-stage-timing-v1",
+      "base": "7eb933eb27002af5c811e460c14fc42d0d53d7e0",
+      "commit": "73d4ff65227b9e4af1b7aac81532be0d1f46b232",
+      "files": {
+        "drivers/metal/private_stage_owner.h": {
+          "sha256": "4cfea25a29bfaf6e08919e5b3fcc9831f04be1a5a73d5901df9feb72406d6c2f",
+          "bytes": 9051
+        },
+        "drivers/metal/private_stage_policy.h": {
+          "sha256": "9fe07ed0aea7cd3c9ed53ba8ecc2cdbb92e5658899ca1a5b1e6ef2e8af0f8035",
+          "bytes": 5975
+        },
+        "drivers/metal/metal3_objects.cpp": {
+          "sha256": "0ecb1c5346d1a45297fb76cde79724b7602bf4bcd9308f71c15fb872f2b565fd",
+          "bytes": 72109
+        },
+        "drivers/metal/metal3_objects.h": {
+          "sha256": "cebeee9e0bc56d667cf0dff566567bd94d8c407f72bf50eac690ee07b1bb56c9",
+          "bytes": 22906
+        }
+      },
+      "source_bytes_exact": true,
+      "status": "source snapshot; see scope in OPENBFME-RUNTIME.md"
+    },
+    {
+      "variant": "stage-timing-source-v2-20261025",
+      "branch": "codex/openbfme-stage-timing-v2",
+      "base": "7eb933eb27002af5c811e460c14fc42d0d53d7e0",
+      "commit": "f77e054ac808326f66b4e57532800cf9d59d0cb3",
+      "files": {
+        "drivers/metal/private_stage_owner.h": {
+          "sha256": "92cf499295ad8b7127f3800d3f7e70f77a682a49c931feecfc9b7e5c417aaa8f",
+          "bytes": 9052
+        },
+        "drivers/metal/private_stage_policy.h": {
+          "sha256": "9fe07ed0aea7cd3c9ed53ba8ecc2cdbb92e5658899ca1a5b1e6ef2e8af0f8035",
+          "bytes": 5975
+        },
+        "drivers/metal/metal3_objects.cpp": {
+          "sha256": "0ecb1c5346d1a45297fb76cde79724b7602bf4bcd9308f71c15fb872f2b565fd",
+          "bytes": 72109
+        },
+        "drivers/metal/metal3_objects.h": {
+          "sha256": "cebeee9e0bc56d667cf0dff566567bd94d8c407f72bf50eac690ee07b1bb56c9",
+          "bytes": 22906
+        }
+      },
+      "source_bytes_exact": true,
+      "status": "source snapshot; see scope in OPENBFME-RUNTIME.md"
+    },
+    {
+      "variant": "stage-timing-source-v3-20261025",
+      "branch": "codex/openbfme-stage-timing-v3",
+      "base": "7eb933eb27002af5c811e460c14fc42d0d53d7e0",
+      "commit": "57e7cc632b04a744203e7c56a40ff284930b612d",
+      "files": {
+        "drivers/metal/private_stage_owner.h": {
+          "sha256": "2335c2e06577817cc474119423e670e93366b3aac9ca4085986e9a154f27edb3",
+          "bytes": 11920
+        },
+        "drivers/metal/private_stage_policy.h": {
+          "sha256": "01101248bfc4e9f02b323169baf5ad48368de473bd081f83eca5b42a2ac50adc",
+          "bytes": 6599
+        },
+        "drivers/metal/metal3_objects.cpp": {
+          "sha256": "81222f2d5ae0ab87484d233196c54829a70a5d602ca0aae9283ffcf950eccda6",
+          "bytes": 72694
+        },
+        "drivers/metal/metal3_objects.h": {
+          "sha256": "cebeee9e0bc56d667cf0dff566567bd94d8c407f72bf50eac690ee07b1bb56c9",
+          "bytes": 22906
+        }
+      },
+      "source_bytes_exact": true,
+      "status": "source snapshot; see scope in OPENBFME-RUNTIME.md"
+    },
+    {
+      "variant": "stage-timing-source-v4-20261025",
+      "branch": "codex/openbfme-stage-timing-v4",
+      "base": "7eb933eb27002af5c811e460c14fc42d0d53d7e0",
+      "commit": "f4887f81a0d0630cfeb9ffab8388ffc106ab71db",
+      "files": {
+        "drivers/metal/private_stage_owner.h": {
+          "sha256": "6194ddd4f231f902f7b7eee375b1c38042970814f87977c0239f2ed35dbb276d",
+          "bytes": 12059
+        },
+        "drivers/metal/private_stage_policy.h": {
+          "sha256": "267dd9138993072680d5c24d986c7a5c8c3b0ae0b996c9d97900457c4de4eb59",
+          "bytes": 6889
+        },
+        "drivers/metal/metal3_objects.cpp": {
+          "sha256": "27a5cd5354ee9ade01a6e8a6086eec8bb94a4af4ce39e8938cc4dadcc32cf83f",
+          "bytes": 73128
+        },
+        "drivers/metal/metal3_objects.h": {
+          "sha256": "cebeee9e0bc56d667cf0dff566567bd94d8c407f72bf50eac690ee07b1bb56c9",
+          "bytes": 22906
+        }
+      },
+      "source_bytes_exact": true,
+      "status": "source snapshot; see scope in OPENBFME-RUNTIME.md"
+    },
+    {
+      "variant": "stage-timing-source-v5-20261025",
+      "branch": "codex/openbfme-stage-timing-v5",
+      "base": "7eb933eb27002af5c811e460c14fc42d0d53d7e0",
+      "commit": "5bb50a00a4343977344890e85f163275403457d9",
+      "files": {
+        "drivers/metal/private_stage_owner.h": {
+          "sha256": "24c0437e08beee229113ed36327739e182af45515a5124ec9ce8ae0a9c4774f6",
+          "bytes": 13745
+        },
+        "drivers/metal/private_stage_policy.h": {
+          "sha256": "267dd9138993072680d5c24d986c7a5c8c3b0ae0b996c9d97900457c4de4eb59",
+          "bytes": 6889
+        },
+        "drivers/metal/metal3_objects.cpp": {
+          "sha256": "27a5cd5354ee9ade01a6e8a6086eec8bb94a4af4ce39e8938cc4dadcc32cf83f",
+          "bytes": 73128
+        },
+        "drivers/metal/metal3_objects.h": {
+          "sha256": "cebeee9e0bc56d667cf0dff566567bd94d8c407f72bf50eac690ee07b1bb56c9",
+          "bytes": 22906
+        }
+      },
+      "source_bytes_exact": true,
+      "status": "source snapshot; see scope in OPENBFME-RUNTIME.md"
+    },
+    {
+      "variant": "terrain-pipeline-mode-source-20261026",
+      "branch": "codex/openbfme-terrain-mobile-control",
+      "base": "7eb933eb27002af5c811e460c14fc42d0d53d7e0",
+      "commit": "71789f893ac652c8847ad807c78060117ec0e91d",
+      "files": {
+        "servers/rendering/renderer_rd/forward_mobile/render_forward_mobile.cpp": {
+          "sha256": "9863400e54dc5654f6b6b3b6cf357bc3c91707b7120f3e098f56d54fb04f167a",
+          "bytes": 162644
+        }
+      },
+      "source_bytes_exact": true,
+      "status": "source snapshot; see scope in OPENBFME-RUNTIME.md"
+    },
+    {
+      "variant": "terrain-pipeline-mode-v2-source-20261026",
+      "branch": "codex/openbfme-terrain-clustered-control",
+      "base": "7eb933eb27002af5c811e460c14fc42d0d53d7e0",
+      "commit": "993f4d4285108db2f81f4b096d4062153ca1b022",
+      "files": {
+        "servers/rendering/renderer_rd/forward_clustered/render_forward_clustered.cpp": {
+          "sha256": "665e93d68357a2b4b3a521331573180fc688d20297eb15a8d07eaf886a94169c",
+          "bytes": 239980
+        }
+      },
+      "source_bytes_exact": true,
+      "status": "source snapshot; see scope in OPENBFME-RUNTIME.md"
+    },
+    {
+      "variant": "texture-accounting-source",
+      "branch": "codex/openbfme-texture-accounting",
+      "base": "7eb933eb27002af5c811e460c14fc42d0d53d7e0",
+      "commit": "7eb933eb27002af5c811e460c14fc42d0d53d7e0",
+      "files": {},
+      "source_bytes_exact": true,
+      "status": "source snapshot; see scope in OPENBFME-RUNTIME.md"
+    }
+  ],
+  "publication_is_runtime_qualification": false
+}
