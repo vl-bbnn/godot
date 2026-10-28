@@ -232,6 +232,9 @@ void SceneShaderForwardClustered::ShaderData::set_code(const String &p_code) {
 	print_line("\n**fragment_globals:\n" + gen_code.stage_globals[ShaderCompiler::STAGE_FRAGMENT]);
 #endif
 	SceneShaderForwardClustered::singleton->shader.version_set_code(version, gen_code.code, gen_code.uniforms, gen_code.stage_globals[ShaderCompiler::STAGE_VERTEX], gen_code.stage_globals[ShaderCompiler::STAGE_FRAGMENT], gen_code.defines);
+	if (pipeline_dependency_trace_enabled()) {
+		print_line("PIPELINE_TRACE shader us=", OS::get_singleton()->get_ticks_usec(), " owner=", uint64_t(uintptr_t(this)), " material_version=", version.get_id(), " code_hash=", p_code.sha256_text(), " code=", p_code.c_escape());
+	}
 
 	ubo_size = gen_code.uniform_total_size;
 	ubo_offsets = gen_code.uniform_offsets;
@@ -329,6 +332,10 @@ uint16_t SceneShaderForwardClustered::ShaderData::_get_shader_version(PipelineVe
 }
 
 void SceneShaderForwardClustered::ShaderData::_create_pipeline(PipelineKey p_pipeline_key) {
+	const bool dependency_trace = pipeline_dependency_trace_enabled();
+	if (dependency_trace) {
+		print_line("PIPELINE_TRACE create_begin us=", OS::get_singleton()->get_ticks_usec(), " owner=", uint64_t(uintptr_t(this)), " hash=", p_pipeline_key.hash(), " task=", WorkerThreadPool::get_singleton()->get_caller_task_id(), " material_version=", version.get_id(), " vertex=", p_pipeline_key.vertex_format_id, " framebuffer=", p_pipeline_key.framebuffer_format_id, " version=", int(p_pipeline_key.version), " flags=", p_pipeline_key.color_pass_flags, " ubershader=", p_pipeline_key.ubershader, " specialization0=", p_pipeline_key.shader_specialization.packed_0, " specialization1=", p_pipeline_key.shader_specialization.packed_1);
+	}
 #if PRINT_PIPELINE_COMPILATION_KEYS
 	print_line(
 			"HASH:", p_pipeline_key.hash(),
@@ -506,6 +513,9 @@ void SceneShaderForwardClustered::ShaderData::_create_pipeline(PipelineKey p_pip
 	ERR_FAIL_COND(pipeline.is_null());
 
 	pipeline_hash_map.add_compiled_pipeline(p_pipeline_key.hash(), pipeline);
+	if (dependency_trace) {
+		print_line("PIPELINE_TRACE create_end us=", OS::get_singleton()->get_ticks_usec(), " owner=", uint64_t(uintptr_t(this)), " hash=", p_pipeline_key.hash(), " task=", WorkerThreadPool::get_singleton()->get_caller_task_id(), " shader=", shader_rid.get_id(), " pipeline=", pipeline.get_id());
+	}
 }
 
 RD::PolygonCullMode SceneShaderForwardClustered::ShaderData::get_cull_mode_from_cull_variant(CullVariant p_cull_variant) {
