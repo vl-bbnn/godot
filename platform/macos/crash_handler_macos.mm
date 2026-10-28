@@ -57,19 +57,9 @@
 #include <cstdlib>
 
 static uint64_t load_address() {
-	char full_path[1024];
-	uint32_t size = sizeof(full_path);
-
-	if (!_NSGetExecutablePath(full_path, &size)) {
-		void *handle = dlopen(full_path, RTLD_LAZY | RTLD_NOLOAD);
-		void *addr = dlsym(handle, "main");
-		Dl_info info;
-		if (dladdr(addr, &info)) {
-			return (uint64_t)info.dli_fbase;
-		}
-	}
-
-	return 0;
+	// The executable remains image 0 even when separate_debug_symbols strips its exported main symbol.
+	// Query the mapped Mach-O header directly so atos receives the actual ASLR load address.
+	return (uint64_t)_dyld_get_image_header(0);
 }
 
 static void handle_crash(int sig) {
